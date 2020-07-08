@@ -49,10 +49,26 @@ function SearchResults(props) {
 
 function SearchResult(props) {
   const img_url = base_image_url + props.value.published_root + '/' + props.value.thumbnail_path;
+  let supersite_node_code = null, image_type = null;
+
+  if (typeof(props.value.metadata_doc) !== "undefined" && typeof(props.value.metadata_doc.supersite_node_code) !== "undefined") {
+    supersite_node_code = props.value.metadata_doc.supersite_node_code;
+  }
+  if (typeof(props.value.metadata_doc) !== "undefined" && typeof(props.value.metadata_doc.image_type) !== "undefined") {
+    image_type = props.value.metadata_doc.image_type;
+  }
+
   return (
     <li id={props.id}>
       <img src={img_url} alt="image_result" /><br />
-      <span className="space-left"><button onClick={() => props.onClick(props.id)}>key:{props.id} - count: {props.value.doc_count}- id:{props.value._id} - node:{props.value.metadata_doc.supersite_node_code} - img:{props.value.metadata_doc.image_type}</button></span>
+      <span className="space-left">
+        <button onClick={() => props.onClick(props.id)}>
+          key:{props.id} - 
+          count: {props.value.doc_count}- 
+          id:{props.value._id} - 
+          node:{supersite_node_code} - 
+          img:{image_type}</button>
+        </span>
     </li>
   );
 }
@@ -157,7 +173,7 @@ function ImageMarker(props) {
 }
 
 class MapSearch extends React.Component {
- 
+
 
   constructor() {
     super();
@@ -174,7 +190,8 @@ class MapSearch extends React.Component {
       aggregation: null,
       lat: -27.47,
       lng: 143.02,
-      zoom: 4
+      zoom: 4,
+      is_loding: true
     };
   }
 
@@ -197,24 +214,28 @@ class MapSearch extends React.Component {
   fetchSearch() {
     // Where we're fetching data from
     console.log('fetching');
-    var search_url = CONFIG.API_BASE_URL + '?1=1';
+    // var search_url = CONFIG.API_BASE_URL + '/';
+    var search_url = "https://bioimages-test.tern.org.au/api/v1.0/search";
     const selectedFilter = this.state.selectedFilter;
+    // console.log('selectedFilter', selectedFilter)
     for (const [key, value] of Object.entries(selectedFilter)) {
       search_url += '&' + key + '=' + value;
     }
-    console.log(search_url);
+    // console.log(search_url);
     fetch(search_url)
       // We get the API response and receive data in JSON format...
       .then(response => response.json())
       // ...then we update the users state
-      .then(data =>
+      .then(data =>{
         this.setState({
           search: data,
           hits: data['hits'],
           filters: data['aggregations'],
           isLoadingSearch: false,
-          aggregation: data['aggregation']
+          aggregation: data['aggregation'],
+          is_loding: false
         })
+      }
       )
       // Catch any errors we hit and update the app
       .catch(error => this.setState({ error, isLoading: false }));
@@ -273,11 +294,11 @@ class MapSearch extends React.Component {
     // });
 
     const position = [this.state.lat, this.state.lng];
-   
+
     return (
       <Fragment>
         <Row>
-       
+
           { /* SideBar.jsx */}
           <Col sm="0" md="0" lg="0" xl="2" style={{ borderRight: "70px solid rgba(149, 219, 199, 0.5)", color: "#065f65", zIndex: "10" }} >
             <Card body style={{ border: "white" }} >
@@ -285,13 +306,13 @@ class MapSearch extends React.Component {
               <header style={{ textAlign: "left", fontFamily: 'museo-sans, sans-serif', fontSize: "20px", backgroundColor: "white" }}><strong>Filter</strong></header>
               <Query />
               <Card style={{ border: "white", textAlign: "left" }} >
-           
+
                 <h6 style={{ paddingTop: "5%", color: "#065f65", fontWeight: "500" }}>Site</h6>
-           
+
                 <Form value={this.state.selectedFilter} onChange={this.handleChange} style={{ paddingTop: "5px" }}>
 
                   {['radio'].map((type) => (
-                    <div style={{fontSize: "15px"}} key={`inline-${type}`} className="mb-3">
+                    <div style={{ fontSize: "15px" }} key={`inline-${type}`} className="mb-3">
                       <Form.Check value={'Site 1'} onChange={this.handleFilter} inline label="Site One" type={type} id={`inline-${type}-1`} /><br />
                       <Form.Check selectedFilter={this.handleInputChange} onChange={this.selectedFilter} inline label="Site Two" type={type} id={`inline-${type}-2`} /><br />
                       <Form.Check value={this.state.selectedFilter} onChange={this.handleFilter} inline label="Site Three" type={type} id={`inline-${type}-3`} /><br />
@@ -309,7 +330,7 @@ class MapSearch extends React.Component {
                 <Form value={this.state.selectedFilter} onChange={this.handleChange} style={{ paddingTop: "5px" }}>
 
                   {['radio'].map((type) => (
-                    <div style={{fontSize: "15px"}} key={`inline-${type}`} className="mb-3">
+                    <div style={{ fontSize: "15px" }} key={`inline-${type}`} className="mb-3">
                       <Form.Check inline label="Leaf Area Index" type={type} id={`inline-${type}-5`} /><br />
                       <Form.Check inline label="Phenocam" type={type} id={`inline-${type}-6`} /><br />
                       <Form.Check inline label="Panorama" type={type} id={`inline-${type}-7`} /><br />
@@ -330,7 +351,7 @@ class MapSearch extends React.Component {
                 <Form value={this.state.selectedFilter} onChange={this.handleChange} style={{ paddingTop: "5px" }}>
 
                   {['radio'].map((type) => (
-                    <div style={{fontSize: "15px"}} key={`inline-${type}`} className="mb-3">
+                    <div style={{ fontSize: "15px" }} key={`inline-${type}`} className="mb-3">
                       <Form.Check inline label="Daily" type={type} id={`inline-${type}-9`} /><br />
                       <Form.Check inline label="Weekly" type={type} id={`inline-${type}-10`} /><br />
                       <Form.Check inline label="Monthly" type={type} id={`inline-${type}-11`} /><br />
@@ -342,7 +363,7 @@ class MapSearch extends React.Component {
               </Card>
               <hr style={{ border: '0.5px solid #66b3a6', marginBottom: "0%", marginTop: "0%" }}></hr>
             </Card>
-           
+
             <IconBar />
 
           </Col>
@@ -354,24 +375,24 @@ class MapSearch extends React.Component {
             <div className="map-container" >
               <div className="right map-frame" >
                 <div id="map-id" >
-                  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" 
+                  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
                     integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
                     crossOrigin="" />
-                  <Map center={position} zoom={this.state.zoom} style={{zIndex: "1"}}>
+                      <Map center={position} zoom={this.state.zoom} style={{ zIndex: "1" }}>
 
-                    <TileLayer 
-                      attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                      url='https://{s}.tile.osm.org/{z}/{x}/{y}.png'
-                    />
+                        <TileLayer
+                          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                          url='https://{s}.tile.osm.org/{z}/{x}/{y}.png'
+                        />
 
-                    <Markers venues={data.venues} />
+                        <Markers venues={data.venues} />
 
-                    {Object.keys(this.state.hits).map((index) => (
-                      <ImageMarkers
-                        value={this.state.hits[index]}
-                        location={index} />
-                    ))}
-                  </Map >
+                        {Object.keys(this.state.hits).map((index, i) => (
+                          <ImageMarkers
+                            value={this.state.hits[index]}
+                            location={index} key={i} />
+                        ))}
+                      </Map >
                 </div>
                 <div>
                   <SearchResults
@@ -396,7 +417,7 @@ class MapSearch extends React.Component {
           { /*End of Leaflet  Map */}
 
         </Row>
-      
+
         <Footer />
 
       </Fragment>
